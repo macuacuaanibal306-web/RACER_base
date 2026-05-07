@@ -1,0 +1,323 @@
+<launch>
+  <!-- size of map, change the size in x, y, z according to your application -->
+  <arg name="map_file" default="$(find map_generator)/resource/forest_cyl_100x100_420.pcd"/>
+  <arg name="map_size_x" default="60.0"/>
+  <arg name="map_size_y" default="60.0"/>
+  <arg name="map_size_z" default="3.5"/>
+  <arg name="map_min_x" default="$(eval -0.5 * float(arg('map_size_x')))"/>
+  <arg name="map_min_y" default="$(eval -0.5 * float(arg('map_size_y')))"/>
+  <arg name="map_min_z" default="0.0"/>
+  <arg name="map_max_x" default="$(eval 0.5 * float(arg('map_size_x')))"/>
+  <arg name="map_max_y" default="$(eval 0.5 * float(arg('map_size_y')))"/>
+  <arg name="map_max_z" default="2.5"/>
+  <arg name="boundary_diag_enable" default="true"/>
+  <arg name="boundary_diag_period" default="1.0"/>
+
+  <!-- Global odom prefix -->
+  <arg name="odom_prefix" value="/state_ukf/odom" />
+    <arg name="diag_file_log_enable" value="true" />
+  <arg name="diag_log_dir" value="$(env HOME)/.ros/swarm_diag_logs" />
+
+  <param name="/diag/file_log_enable" value="$(arg diag_file_log_enable)" />
+  <param name="/diag/log_dir" value="$(arg diag_log_dir)" />
+
+<arg name="drone_num" default="2" />
+  <arg name="enable_comm_constraint" value="true" />
+  <arg name="comm_range" value="20.0" />
+  <arg name="enable_comm_status_vis" value="false" />
+  <arg name="comm_status_timeout" value="0.25" />
+
+    <!-- Map generation -->
+  <!-- <node pkg ="map_generator" name ="map_pub" type ="map_pub" output = "screen" args="$(find map_generator)/resource/office.pcd"pillar>    
+  </node> -->
+  <node pkg ="map_generator" name ="map_pub" type ="map_pub" output = "screen" args="$(arg map_file)">
+    <param name="add_ground_plane" value="true"/>
+    <param name="ground_use_map_size" value="true"/>
+    <param name="ground_resolution" value="0.1"/>
+    <param name="ground_z" value="0.0"/>
+    <param name="ground_margin_xy" value="0.0"/>
+    <param name="map_size_x" value="$(arg map_size_x)"/>
+    <param name="map_size_y" value="$(arg map_size_y)"/>
+    <param name="map_min_x" value="$(arg map_min_x)"/>
+    <param name="map_min_y" value="$(arg map_min_y)"/>
+    <param name="map_max_x" value="$(arg map_max_x)"/>
+    <param name="map_max_y" value="$(arg map_max_y)"/>
+  </node>
+
+<include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="1"/>
+    <arg name="init_x"   value="-1.5"/>
+    <arg name="init_y"   value="-1.9"/>
+    <arg name="init_z"   value="1"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="2"/>
+    <arg name="init_x"   value="-1.5"/>
+    <arg name="init_y"   value="-0.9"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml" if="$(eval int(arg('drone_num')) >= 3)">
+    <arg name="drone_id" value="3"/>
+    <arg name="init_x"   value="-0.5"/>
+    <arg name="init_y"   value="-1.9"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml" if="$(eval int(arg('drone_num')) >= 4)">
+    <arg name="drone_id" value="4"/>
+    <arg name="init_x"   value="-0.5"/>
+    <arg name="init_y"   value="-0.9"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+
+  <!-- <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="5"/>
+    <arg name="init_x"   value="1"/>
+    <arg name="init_y"   value="1"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+  
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="6"/>
+    <arg name="init_x"   value="0"/>
+    <arg name="init_y"   value="1"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include> -->
+
+  <!-- <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="7"/>
+    <arg name="init_x"   value="-1"/>
+    <arg name="init_y"   value="1"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="8"/>
+    <arg name="init_x"   value="-1"/>
+    <arg name="init_y"   value="0"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include>
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="9"/>
+    <arg name="init_x"   value="-1"/>
+    <arg name="init_y"   value="-1"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include> -->
+
+  <!-- <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="10"/>
+    <arg name="init_x"   value="0"/>
+    <arg name="init_y"   value="-5.0"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="map_min_x" value="$(arg map_min_x)"/>
+    <arg name="map_min_y" value="$(arg map_min_y)"/>
+    <arg name="map_min_z" value="$(arg map_min_z)"/>
+    <arg name="map_max_x" value="$(arg map_max_x)"/>
+    <arg name="map_max_y" value="$(arg map_max_y)"/>
+    <arg name="map_max_z" value="$(arg map_max_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+    <arg name="boundary_diag_enable" value="$(arg boundary_diag_enable)"/>
+    <arg name="boundary_diag_period" value="$(arg boundary_diag_period)"/>
+  </include> -->
+
+
+  <!-- intent boundary reset -->
+  <param name="intent_prediction/boundary_hit_time_thresh" value="0.5" />
+  <param name="intent_prediction/boundary_keep_recent_time" value="0.4" />
+  <param name="intent_prediction/boundary_keep_recent_samples" value="3" />
+  <param name="intent_prediction/boundary_min_speed" value="0.15" />
+  <param name="intent_prediction/speed_avg_time" value="3.0" />
+  <param name="intent_prediction/speed_min_dt" value="0.05" />
+  <param name="intent_prediction/pred_horizon" value="3.0" />
+  <param name="intent_prediction/enable_speed_vis" value="true" />
+  <param name="intent_prediction/speed_vis_scale" value="1.5" />
+  <param name="intent_prediction/speed_vis_min_len" value="0.25" />
+  <param name="intent_prediction/speed_vis_max_len" value="3.0" />
+
+  <!-- Leader-based rendezvous manager. In this two-drone debug version, drone 1 is fixed as the cluster leader/owner that computes and publishes the rendezvous region. -->
+  <include file="$(find rendezvous_manager)/launch/two_drone_rendezvous.launch">
+    <arg name="enable" value="true"/>
+    <arg name="self_drone_id" value="1"/>
+    <arg name="leader_drone_id" value="1"/>
+    <arg name="compute_only_if_leader" value="true"/>
+    <arg name="drone_id_1" value="1"/>
+    <arg name="drone_id_2" value="2"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+  </include>
+
+</launch>

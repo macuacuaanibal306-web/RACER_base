@@ -1,0 +1,46 @@
+<launch>
+  <arg name="enable" default="true"/>
+  <arg name="self_drone_id" default="1"/>
+  <arg name="leader_drone_id" default="1"/>
+  <arg name="compute_only_if_leader" default="true"/>
+  <arg name="drone_id_1" default="1"/>
+  <arg name="drone_id_2" default="2"/>
+  <arg name="comm_range" default="12.0"/>
+  <arg name="state_topic" default="/swarm_expl/drone_state"/>
+  <arg name="marker_topic" default="/rendezvous_manager/two_drone_region"/>
+  <arg name="frame_id" default="world"/>
+
+  <node pkg="rendezvous_manager" type="two_drone_st_rendezvous_node" name="two_drone_st_rendezvous_node" output="screen" if="$(arg enable)">
+    <param name="state_topic" value="$(arg state_topic)"/>
+    <param name="marker_topic" value="$(arg marker_topic)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="self_drone_id" value="$(arg self_drone_id)"/>
+    <param name="leader_drone_id" value="$(arg leader_drone_id)"/>
+    <param name="compute_only_if_leader" value="$(arg compute_only_if_leader)"/>
+    <param name="drone_id_1" value="$(arg drone_id_1)"/>
+    <param name="drone_id_2" value="$(arg drone_id_2)"/>
+    <param name="min_time" value="1.0"/>
+    <param name="max_time" value="12.0"/>
+    <param name="default_time" value="3.0"/>
+    <param name="region_radius" value="0.0"/>
+    <param name="comm_range" value="$(arg comm_range)"/>
+    <param name="comm_margin" value="0.5"/>
+    <param name="min_intent_speed" value="0.05"/>
+    <param name="min_intent_conf" value="0.10"/>
+    <param name="min_intent_integral_time" value="1.0"/>
+    <param name="state_timeout" value="5.0"/>
+    <param name="enable_comm_trigger" value="true"/>
+    <param name="force_generate_for_debug" value="false"/>
+    <param name="comm_trigger_ratio" value="0.85"/>
+    <param name="comm_trigger_time" value="6.0"/>
+    <param name="region_hold_time" value="30.0"/>
+    <param name="min_regenerate_interval" value="5.0"/>
+    <param name="keep_last_region_when_waiting" value="true"/>
+    <param name="publish_rate" value="5.0"/>
+    <param name="vis_z_offset" value="0.25"/>
+    <param name="center_scale" value="0.35"/>
+    <param name="circle_segments" value="72"/>
+    <param name="show_waiting_marker" value="true"/>
+    <param name="debug_log" value="true"/>
+  </node>
+</launch>

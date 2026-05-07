@@ -1,0 +1,49 @@
+<launch>
+  <!-- size of map, change the size in x, y, z according to your application -->
+  <arg name="map_size_x" value="35.0"/>
+  <arg name="map_size_y" value="25.0"/>
+  <arg name="map_size_z" value=" 3.5"/>
+
+  <!-- Global odom prefix -->
+  <arg name="odom_prefix" value="/state_ukf/odom" />
+  <arg name="drone_num" value="4" />
+  <arg name="enable_comm_constraint" value="true" />
+  <arg name="comm_range" value="8.0" />
+  <arg name="enable_comm_status_vis" value="true" />
+  <arg name="comm_status_timeout" value="0.25" />
+
+  <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="3"/>
+    <arg name="init_x"   value="-3.0"/>
+    <arg name="init_y"   value="-1.0"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+  </include>
+
+  <!-- <include file="$(find exploration_manager)/launch/single_drone_exploration.xml">
+    <arg name="drone_id" value="3"/>
+    <arg name="init_x"   value="-8"/>
+    <arg name="init_y"   value="-0.5"/>
+    <arg name="init_z"   value="1"/> 
+    <arg name="map_size_x" value="$(arg map_size_x)"/>
+    <arg name="map_size_y" value="$(arg map_size_y)"/>
+    <arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_prefix" value="$(arg odom_prefix)"/>
+    <arg name="drone_num" value="$(arg drone_num)"/>
+    <arg name="enable_comm_constraint" value="$(arg enable_comm_constraint)"/>
+    <arg name="comm_range" value="$(arg comm_range)"/>
+    <arg name="enable_comm_status_vis" value="$(arg enable_comm_status_vis)"/>
+    <arg name="comm_status_timeout" value="$(arg comm_status_timeout)"/>
+    <arg name="simulation" default="true"/>
+  </include> -->
+
+</launch>
