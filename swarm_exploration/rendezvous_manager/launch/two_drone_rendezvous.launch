@@ -1,10 +1,10 @@
 <launch>
   <arg name="enable" default="true"/>
+  <arg name="drone_id_1" default="1"/>
+  <arg name="drone_id_2" default="2"/>
   <arg name="self_drone_id" default="1"/>
   <arg name="leader_drone_id" default="1"/>
   <arg name="compute_only_if_leader" default="true"/>
-  <arg name="drone_id_1" default="1"/>
-  <arg name="drone_id_2" default="2"/>
   <arg name="comm_range" default="12.0"/>
   <arg name="state_topic" default="/swarm_expl/drone_state"/>
   <arg name="marker_topic" default="/rendezvous_manager/two_drone_region"/>
@@ -14,11 +14,12 @@
     <param name="state_topic" value="$(arg state_topic)"/>
     <param name="marker_topic" value="$(arg marker_topic)"/>
     <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="drone_id_1" value="$(arg drone_id_1)"/>
+    <param name="drone_id_2" value="$(arg drone_id_2)"/>
     <param name="self_drone_id" value="$(arg self_drone_id)"/>
     <param name="leader_drone_id" value="$(arg leader_drone_id)"/>
     <param name="compute_only_if_leader" value="$(arg compute_only_if_leader)"/>
-    <param name="drone_id_1" value="$(arg drone_id_1)"/>
-    <param name="drone_id_2" value="$(arg drone_id_2)"/>
+    <param name="log_nonleader_standby" value="true"/>
     <param name="min_time" value="1.0"/>
     <param name="max_time" value="12.0"/>
     <param name="default_time" value="3.0"/>

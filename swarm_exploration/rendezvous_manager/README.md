@@ -59,21 +59,24 @@ Key debug parameters:
 For pure visualization debugging, set `force_generate_for_debug=true`. For normal experiments, keep it false.
 
 
-## Leader-based computation mode
+## Temporary leader/owner mode
 
-The current debug version uses a fixed two-drone cluster: drones `[1, 2]`.
-Drone 1 is configured as the temporary cluster leader/owner. The leader node subscribes to the shared `DroneState` stream, collects both drone states, computes one unique spatio-temporal rendezvous region, and publishes the RViz marker result.
+For the current two-drone debugging stage, rendezvous-region generation is assigned to drone 1.
 
-This keeps the architecture aligned with the later distributed design: every UAV can host the same rendezvous manager code, but only the current cluster leader is allowed to compute and publish the active rendezvous region. Non-leader instances, if started later, should remain in standby and avoid publishing competing regions.
+The node still contains the complete two-drone computation logic, but it only computes and publishes when:
 
-Key parameters:
-
-```xml
-<param name="self_drone_id" value="1"/>
-<param name="leader_drone_id" value="1"/>
-<param name="compute_only_if_leader" value="true"/>
-<param name="drone_id_1" value="1"/>
-<param name="drone_id_2" value="2"/>
+```text
+self_drone_id == leader_drone_id
 ```
 
-For the current two-drone test, only the leader instance is launched by default.
+Default configuration:
+
+```xml
+<arg name="self_drone_id" default="1"/>
+<arg name="leader_drone_id" default="1"/>
+<arg name="compute_only_if_leader" default="true"/>
+```
+
+This means drone 2 only contributes its `DroneState`; it does not publish an independent rendezvous region.
+If the same node is later launched under every drone namespace, non-leader instances will stay in standby and will not publish to the rendezvous marker topic.
+This avoids multiple asynchronous nodes generating inconsistent regions from different state snapshots.

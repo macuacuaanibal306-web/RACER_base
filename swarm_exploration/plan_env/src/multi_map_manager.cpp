@@ -271,7 +271,10 @@ void MultiMapManager::stampTimerCallback(const ros::TimerEvent& e) {
 
 void MultiMapManager::stampMsgCallback(const plan_env::ChunkStampsConstPtr& msg) {
   if (msg->from_drone_id == drone_id_) return;
-  if (drone_id_ == map_num_) return;  // Ground node does not send chunk
+  // In the current UAV-only simulation there is no separate ground node.
+  // The old condition `drone_id_ == map_num_` wrongly treats the last UAV as a
+  // ground node when drone_num == map_num, so that UAV never responds with chunk_data.
+  // if (drone_id_ == map_num_) return;  // Ground node does not send chunk
 
   Eigen::Vector3d sender_pos(msg->pos_x, msg->pos_y, msg->pos_z);
   if (!isInCommunicationRange(sender_pos)) return;

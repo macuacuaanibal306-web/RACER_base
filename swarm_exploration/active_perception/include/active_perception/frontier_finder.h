@@ -76,6 +76,10 @@ public:
       const vector<double>& yaws, const vector<int>& ftr_ids,
       const vector<Eigen::Vector3d>& grid_pos, Eigen::MatrixXd& mat);
 
+  int getFrontierNum() const {
+    return static_cast<int>(frontiers_.size());
+  }
+
   void getPathForTour(const Vector3d& pos, const vector<int>& frontier_ids, vector<Vector3d>& path);
 
   void setNextFrontier(const int& id);

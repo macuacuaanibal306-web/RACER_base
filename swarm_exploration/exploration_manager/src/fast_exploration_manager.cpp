@@ -1008,19 +1008,51 @@ void FastExplorationManager::findGridAndFrontierPath(const Vector3d& cur_pos,
   vector<int> ftr_ids;
   // uniform_grid_->getFrontiersInGrid(ego_ids[0], ftr_ids);
   hgrid_->getFrontiersInGrid(ego_ids, ftr_ids);
+
+  // Large maps and synchronized teammate maps can update/cover frontiers quickly.
+  // hgrid may still hold stale frontier ids from the previous frontier set, so filter
+  // them before constructing the TSP/cost matrix.
+  const int frontier_num_now = frontier_finder_->getFrontierNum();
+  vector<int> valid_ftr_ids;
+  vector<int> invalid_ftr_ids;
+  valid_ftr_ids.reserve(ftr_ids.size());
+  for (const int fid : ftr_ids) {
+    if (fid >= 0 && fid < frontier_num_now) valid_ftr_ids.push_back(fid);
+    else invalid_ftr_ids.push_back(fid);
+  }
+  if (!invalid_ftr_ids.empty()) {
+    ROS_WARN_THROTTLE(1.0,
+        "[explore][drone %d] filtered %zu stale frontier ids, current_frontier_num=%d",
+        ep_->drone_id_, invalid_ftr_ids.size(), frontier_num_now);
+    std::ostringstream oss;
+    oss << "filtered_stale_frontier_ids=" << vecToStrFM(invalid_ftr_ids)
+        << ", current_frontier_num=" << frontier_num_now;
+    appendDiagLineFM(ep_->drone_id_, "TASK_ASSIGN", oss.str());
+  }
+  ftr_ids.swap(valid_ftr_ids);
+
+  const int max_ftr_for_tsp = 80;
+  if ((int)ftr_ids.size() > max_ftr_for_tsp) {
+    ROS_WARN_THROTTLE(1.0,
+        "[explore][drone %d] too many frontier candidates %zu, truncate to %d",
+        ep_->drone_id_, ftr_ids.size(), max_ftr_for_tsp);
+    ftr_ids.resize(max_ftr_for_tsp);
+  }
+
   ROS_INFO("Find frontier tour, %d involved------------", (int)ftr_ids.size());
   {
     std::ostringstream oss;
     oss << "findGridAndFrontierPath assigned_grid_ids=" << vecToStrFM(ego_ids)
         << ", other_grid_groups=" << vecVecToStrFM(other_ids)
         << ", frontier_candidates=" << vecToStrFM(ftr_ids)
-        << ", frontier_candidate_count=" << ftr_ids.size();
+        << ", frontier_candidate_count=" << ftr_ids.size()
+        << ", current_frontier_num=" << frontier_num_now;
     appendDiagLineFM(ep_->drone_id_, "TASK_ASSIGN", oss.str());
   }
 
   if (ftr_ids.empty()) {
     frontier_ids = {};
-    appendDiagLineFM(ep_->drone_id_, "TASK_ASSIGN", "findGridAndFrontierPath no_frontier_in_assigned_grid");
+    appendDiagLineFM(ep_->drone_id_, "TASK_ASSIGN", "findGridAndFrontierPath no_valid_frontier_in_assigned_grid");
     return;
   }
 
@@ -1891,6 +1923,11 @@ void FastExplorationManager::findTourOfFrontier(const Vector3d& cur_pos, const V
   // frontier_finder_->getSwarmCostMatrix(positions, velocities, yaws, mat);
   Eigen::MatrixXd mat;
   frontier_finder_->getSwarmCostMatrix(positions, velocities, yaws, ftr_ids, grid_pos, mat);
+  if (mat.rows() <= 0 || mat.cols() <= 0) {
+    ROS_ERROR("[explore][drone %d] empty frontier TSP matrix, skip frontier tour", ep_->drone_id_);
+    indices.clear();
+    return;
+  }
   const int dimension = mat.rows();
   // std::cout << "dim of frontier TSP mat: " << dimension << std::endl;
 

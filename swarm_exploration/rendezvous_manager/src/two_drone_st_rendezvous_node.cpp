@@ -42,11 +42,12 @@ public:
     pnh_.param<std::string>("state_topic", state_topic_, std::string("/swarm_expl/drone_state"));
     pnh_.param<std::string>("marker_topic", marker_topic_, std::string("/rendezvous_manager/two_drone_region"));
     pnh_.param<std::string>("frame_id", frame_id_, std::string("world"));
-    pnh_.param("self_drone_id", self_drone_id_, 1);
-    pnh_.param("leader_drone_id", leader_drone_id_, 1);
-    pnh_.param("compute_only_if_leader", compute_only_if_leader_, true);
     pnh_.param("drone_id_1", drone_id_1_, 1);
     pnh_.param("drone_id_2", drone_id_2_, 2);
+    pnh_.param("self_drone_id", self_drone_id_, drone_id_1_);
+    pnh_.param("leader_drone_id", leader_drone_id_, drone_id_1_);
+    pnh_.param("compute_only_if_leader", compute_only_if_leader_, true);
+    pnh_.param("log_nonleader_standby", log_nonleader_standby_, true);
     pnh_.param("min_time", min_time_, 1.0);
     pnh_.param("max_time", max_time_, 12.0);
     pnh_.param("default_time", default_time_, 3.0);
@@ -75,15 +76,14 @@ public:
       ROS_WARN("[rendezvous_manager] drone_id_1 equals drone_id_2. Set drone_id_2 to drone_id_1 + 1.");
       drone_id_2_ = drone_id_1_ + 1;
     }
+    if (self_drone_id_ <= 0) self_drone_id_ = drone_id_1_;
+    if (leader_drone_id_ <= 0) leader_drone_id_ = drone_id_1_;
+    if (leader_drone_id_ != drone_id_1_ && leader_drone_id_ != drone_id_2_) {
+      ROS_WARN("[rendezvous_manager] leader_drone_id is not in [drone_id_1, drone_id_2]. Use drone_id_1 as leader.");
+      leader_drone_id_ = drone_id_1_;
+    }
     max_time_ = std::max(min_time_ + 0.1, max_time_);
     default_time_ = clamp(default_time_, min_time_, max_time_);
-
-    if (leader_drone_id_ != drone_id_1_ && leader_drone_id_ != drone_id_2_) {
-      ROS_WARN_STREAM("[rendezvous_manager] leader_drone_id=" << leader_drone_id_
-                      << " is not in the current two-drone cluster ["
-                      << drone_id_1_ << "," << drone_id_2_
-                      << "]. Keep it for debugging, but this node will not compute if compute_only_if_leader=true and self is not the leader.");
-    }
 
     state_sub_ = nh_.subscribe(state_topic_, 50, &TwoDroneSTRendezvousNode::stateCallback, this);
     // Latch the latest MarkerArray so RViz can display it even if the display is added after startup.
@@ -93,9 +93,8 @@ public:
 
     ROS_INFO_STREAM("[rendezvous_manager] Two-drone ST rendezvous node started. state_topic="
                     << state_topic_ << ", marker_topic=" << marker_topic_
-                    << ", members=[" << drone_id_1_ << "," << drone_id_2_ << "]"
-                    << ", self_drone_id=" << self_drone_id_
-                    << ", leader_drone_id=" << leader_drone_id_
+                    << ", drones=[" << drone_id_1_ << "," << drone_id_2_ << "]"
+                    << ", self=" << self_drone_id_ << ", leader=" << leader_drone_id_
                     << ", compute_only_if_leader=" << (compute_only_if_leader_ ? "true" : "false"));
   }
 
@@ -263,7 +262,7 @@ private:
 
     std::ostringstream ss;
     ss << "ST-RV[" << drone_id_1_ << "," << drone_id_2_ << "] waiting"
-       << "\nself=" << self_drone_id_ << " leader=" << leader_drone_id_
+       << "\nleader=" << leader_drone_id_ << "  self=" << self_drone_id_
        << "\nreason: " << reason
        << "\ntopic: " << state_topic_
        << "\nmarker: " << marker_topic_;
@@ -273,10 +272,11 @@ private:
 
   void timerCallback(const ros::TimerEvent&) {
     if (compute_only_if_leader_ && self_drone_id_ != leader_drone_id_) {
-      std::ostringstream extra;
-      extra << "self=" << self_drone_id_ << ", leader=" << leader_drone_id_
-            << ", node is in standby and will not publish rendezvous region";
-      publishWaitingText("standby: not cluster leader", extra.str());
+      if (debug_log_ && log_nonleader_standby_) {
+        ROS_INFO_STREAM_THROTTLE(2.0, "[rendezvous_manager] standby: self_drone_id=" << self_drone_id_
+                                 << " is not leader_drone_id=" << leader_drone_id_
+                                 << "; this instance will not compute or publish rendezvous regions.");
+      }
       return;
     }
 
@@ -323,14 +323,31 @@ private:
       publishWaitingText("invalid intent prediction", formatTriggerStatus(s1, s2, dist_now, t_disconnect, true));
       return;
     }
-    if (s1.intent_conf < min_intent_conf_ || s2.intent_conf < min_intent_conf_) {
-      publishWaitingText("intent confidence too low", formatTriggerStatus(s1, s2, dist_now, t_disconnect, true));
-      return;
+    // Do NOT block rendezvous generation only because confidence is low.
+    // In a communication-risk / disconnected case, a low-confidence rendezvous region
+    // is still more useful than no rendezvous region. Confidence is now used as a
+    // quality flag and as the center-weight, not as a hard gate.
+    const bool low_conf =
+        (s1.intent_conf < min_intent_conf_ || s2.intent_conf < min_intent_conf_);
+    if (low_conf && debug_log_) {
+      ROS_WARN_STREAM_THROTTLE(
+          1.0,
+          "[rendezvous_manager] intent confidence low but continue generating region; conf=("
+              << s1.intent_conf << "," << s2.intent_conf << "), min=" << min_intent_conf_);
     }
-    if (s1.intent_t_int < min_intent_integral_time_ || s2.intent_t_int < min_intent_integral_time_) {
-      publishWaitingText("intent history still accumulating", formatTriggerStatus(s1, s2, dist_now, t_disconnect, true));
-      return;
+
+    // The integrated intent time is also treated as a quality flag. Keeping this as
+    // a hard gate can prevent any emergency/reconnection region from appearing right
+    // after a history reset. The generated region is tagged LOW_HISTORY in RViz.
+    const bool low_history =
+        (s1.intent_t_int < min_intent_integral_time_ || s2.intent_t_int < min_intent_integral_time_);
+    if (low_history && debug_log_) {
+      ROS_WARN_STREAM_THROTTLE(
+          1.0,
+          "[rendezvous_manager] intent history still short but continue generating region; t_int=("
+              << s1.intent_t_int << "," << s2.intent_t_int << "), min=" << min_intent_integral_time_);
     }
+
     if (s1.intent_aligned_speed < min_intent_speed_ || s2.intent_aligned_speed < min_intent_speed_) {
       publishWaitingText("intent aligned speed too low", formatTriggerStatus(s1, s2, dist_now, t_disconnect, true));
       return;
@@ -349,8 +366,9 @@ private:
     pred1.z() = vis_z;
     pred2.z() = vis_z;
 
-    const double w1 = std::max(0.05, s1.intent_conf);
-    const double w2 = std::max(0.05, s2.intent_conf);
+    const double min_weight = 0.05;
+    const double w1 = std::max(min_weight, s1.intent_conf);
+    const double w2 = std::max(min_weight, s2.intent_conf);
     Eigen::Vector3d center = (w1 * pred1 + w2 * pred2) / std::max(1e-6, w1 + w2);
     center.z() = vis_z;
 
@@ -386,9 +404,16 @@ private:
     visualization_msgs::MarkerArray arr;
     arr.markers.push_back(makeDeleteAllMarker());
 
-    const double cr = feasible ? 0.0 : 1.0;
-    const double cg = feasible ? 0.85 : 0.35;
-    const double cb = feasible ? 1.0 : 0.05;
+    double cr = feasible ? 0.0 : 1.0;
+    double cg = feasible ? 0.85 : 0.35;
+    double cb = feasible ? 1.0 : 0.05;
+    // Orange means the region is generated from low-confidence or short-history intent.
+    // Red still means the two predicted states are not time-synchronized within one region.
+    if (feasible && (low_conf || low_history)) {
+      cr = 1.0;
+      cg = 0.65;
+      cb = 0.0;
+    }
 
     auto circle = baseMarker("rv_region_circle", 1, visualization_msgs::Marker::LINE_STRIP);
     circle.scale.x = 0.055;
@@ -409,7 +434,7 @@ private:
     center_marker.scale.x = center_scale;
     center_marker.scale.y = center_scale;
     center_marker.scale.z = center_scale;
-    setColor(center_marker, feasible ? 0.0 : 1.0, feasible ? 1.0 : 0.25, feasible ? 0.55 : 0.0, 1.0);
+    setColor(center_marker, cr, feasible ? std::max(0.25, cg) : 0.25, feasible ? std::max(0.0, cb) : 0.0, 1.0);
     arr.markers.push_back(center_marker);
 
     auto pred_marker = baseMarker("rv_pred_points", 3, visualization_msgs::Marker::SPHERE_LIST);
@@ -436,7 +461,10 @@ private:
     arr.markers.push_back(pair_line);
 
     std::ostringstream ss;
-    ss << "ST-RV[" << drone_id_1_ << "," << drone_id_2_ << "] " << (feasible ? "OK" : "NOT_SYNC")
+    ss << "ST-RV[" << drone_id_1_ << "," << drone_id_2_ << "] ";
+    if (low_conf) ss << "LOW_CONF ";
+    if (low_history) ss << "LOW_HISTORY ";
+    ss << (feasible ? "OK" : "NOT_SYNC")
        << "  leader=" << leader_drone_id_
        << "\neta=" << std::fixed << std::setprecision(1) << eta << "s"
        << "  d12=" << std::setprecision(2) << pair_dist << "m"
@@ -444,14 +472,16 @@ private:
        << "\ncenter=(" << std::setprecision(2) << center.x() << "," << center.y() << ")"
        << "  vI=(" << s1.intent_aligned_speed << "," << s2.intent_aligned_speed << ")"
        << "\nconf=(" << std::setprecision(2) << s1.intent_conf << "," << s2.intent_conf << ")"
+       << "  min_conf=" << min_intent_conf_
+       << "\nt_int=(" << std::setprecision(2) << s1.intent_t_int << "," << s2.intent_t_int << ")"
+       << "  min_t=" << min_intent_integral_time_
        << "  terr~" << std::setprecision(2) << time_residual << "s";
     Eigen::Vector3d text_pos = center;
     text_pos.z() += 1.0;
     arr.markers.push_back(makeTextMarker(text_pos, ss.str(), cr, cg, cb, 1.0));
 
     if (debug_log_) {
-      ROS_INFO_STREAM_THROTTLE(1.0, "[rendezvous_manager] leader " << leader_drone_id_
-                               << " publish ST region: center=("
+      ROS_INFO_STREAM_THROTTLE(1.0, "[rendezvous_manager] publish ST region: center=("
                                << center.x() << "," << center.y() << "," << center.z()
                                << "), eta=" << eta << ", radius=" << radius
                                << ", pred_dist=" << pair_dist << ", feasible=" << feasible);
@@ -468,11 +498,12 @@ private:
   std::string state_topic_;
   std::string marker_topic_;
   std::string frame_id_;
+  int drone_id_1_ = 1;
+  int drone_id_2_ = 2;
   int self_drone_id_ = 1;
   int leader_drone_id_ = 1;
   bool compute_only_if_leader_ = true;
-  int drone_id_1_ = 1;
-  int drone_id_2_ = 2;
+  bool log_nonleader_standby_ = true;
   double min_time_ = 1.0;
   double max_time_ = 12.0;
   double default_time_ = 3.0;

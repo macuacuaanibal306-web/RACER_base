@@ -649,10 +649,25 @@ void FrontierFinder::getSwarmCostMatrix(const vector<Vector3d>& positions,
   Eigen::MatrixXd full_mat;
   getSwarmCostMatrix(positions, velocities, yaws, full_mat);
 
-  // Get part of the full matrix according to selected frontier
-
+  // Get part of the full matrix according to selected frontier.
+  // ftr_ids may be stale after large-map frontier updates or teammate-map synchronization.
   const int drone_num = positions.size();
   const int ftr_num = ftr_ids.size();
+  const int full_ftr_num = static_cast<int>(frontiers_.size());
+
+  auto validFtrId = [&](const int fid) {
+    const int idx = 1 + drone_num + fid;
+    return fid >= 0 && fid < full_ftr_num && idx >= 0 && idx < full_mat.rows() && idx < full_mat.cols();
+  };
+
+  for (const int fid : ftr_ids) {
+    if (!validFtrId(fid)) {
+      ROS_ERROR_THROTTLE(1.0,
+          "[frontier_finder] invalid ftr_id=%d, frontiers_size=%d, full_mat=(%ld,%ld), drone_num=%d",
+          fid, full_ftr_num, full_mat.rows(), full_mat.cols(), drone_num);
+    }
+  }
+
   int dimen = 1 + drone_num + ftr_num;
   if (!grid_pos.empty()) dimen += 1;
 
@@ -678,15 +693,23 @@ void FrontierFinder::getSwarmCostMatrix(const vector<Vector3d>& positions,
   // Costs from drones to frontiers
   for (int i = 0; i < drone_num; ++i) {
     for (int j = 0; j < ftr_num; ++j) {
-      mat(1 + i, 1 + drone_num + j) = full_mat(1 + i, 1 + drone_num + ftr_ids[j]);
+      if (validFtrId(ftr_ids[j])) {
+        mat(1 + i, 1 + drone_num + j) = full_mat(1 + i, 1 + drone_num + ftr_ids[j]);
+      } else {
+        mat(1 + i, 1 + drone_num + j) = 1e6;
+      }
       mat(1 + drone_num + j, 1 + i) = 0;
     }
   }
   // Costs between frontiers
   for (int i = 0; i < ftr_num; ++i) {
     for (int j = 0; j < ftr_num; ++j) {
-      mat(1 + drone_num + i, 1 + drone_num + j) =
-          full_mat(1 + drone_num + ftr_ids[i], 1 + drone_num + ftr_ids[j]);
+      if (validFtrId(ftr_ids[i]) && validFtrId(ftr_ids[j])) {
+        mat(1 + drone_num + i, 1 + drone_num + j) =
+            full_mat(1 + drone_num + ftr_ids[i], 1 + drone_num + ftr_ids[j]);
+      } else {
+        mat(1 + drone_num + i, 1 + drone_num + j) = 1e6;
+      }
     }
   }
   // Diag
@@ -713,8 +736,15 @@ void FrontierFinder::getSwarmCostMatrix(const vector<Vector3d>& positions,
     Eigen::Vector3d next_grid = grid_pos[0];
 
     for (int i = 0; i < ftr_num; ++i) {
-      double cost = ViewNode::computeCost(
-          next_grid, points[ftr_ids[i]], 0, 0, Eigen::Vector3d(0, 0, 0), 0, tmps);
+      double cost = 1e6;
+      if (ftr_ids[i] >= 0 && ftr_ids[i] < static_cast<int>(points.size())) {
+        cost = ViewNode::computeCost(
+            next_grid, points[ftr_ids[i]], 0, 0, Eigen::Vector3d(0, 0, 0), 0, tmps);
+      } else {
+        ROS_ERROR_THROTTLE(1.0,
+            "[frontier_finder] invalid ftr_id=%d for top viewpoint points, points_size=%zu",
+            ftr_ids[i], points.size());
+      }
       mat(1 + drone_num + i, 1 + drone_num + ftr_num) = cost;
       mat(1 + drone_num + ftr_num, 1 + drone_num + i) = cost;
     }

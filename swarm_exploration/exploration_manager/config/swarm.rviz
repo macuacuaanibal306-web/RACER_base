@@ -109,7 +109,7 @@ Visualization Manager:
           Marker Topic: /planning/travel_traj_3
           Name: executed_traj3
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -117,7 +117,7 @@ Visualization Manager:
           Marker Topic: /planning/position_cmd_vis_3
           Name: position_cmd3
           Namespaces:
-            current_pose: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -125,7 +125,7 @@ Visualization Manager:
           Marker Topic: /planning/travel_traj_4
           Name: executed_traj4
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -133,7 +133,7 @@ Visualization Manager:
           Marker Topic: /planning/position_cmd_vis_4
           Name: position_cmd4
           Namespaces:
-            current_pose: true
+            {}
           Queue Size: 100
           Value: true
       Enabled: true
@@ -185,7 +185,7 @@ Visualization Manager:
           Marker Topic: /planning_vis/trajectory_3
           Name: traj3
           Namespaces:
-            B-Spline: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -193,7 +193,7 @@ Visualization Manager:
           Marker Topic: /planning_vis/trajectory_4
           Name: traj4
           Namespaces:
-            B-Spline: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -251,7 +251,13 @@ Visualization Manager:
               Marker Topic: /planning_vis/viewpoints_1
               Name: viewpoint1
               Namespaces:
+                comm_status: true
                 grid_tour: true
+                intent_hist: true
+                intent_pred: true
+                intent_speed_arrow: true
+                intent_speed_text: true
+                intent_text: true
                 partition: true
                 text: true
               Queue Size: 1000
@@ -261,7 +267,13 @@ Visualization Manager:
               Marker Topic: /planning_vis/viewpoints_2
               Name: viewpoint2
               Namespaces:
+                comm_status: true
                 grid_tour: true
+                intent_hist: true
+                intent_pred: true
+                intent_speed_arrow: true
+                intent_speed_text: true
+                intent_text: true
               Queue Size: 1000
               Value: true
             - Class: rviz/Marker
@@ -269,7 +281,7 @@ Visualization Manager:
               Marker Topic: /planning_vis/viewpoints_3
               Name: viewpoint3
               Namespaces:
-                grid_tour: true
+                {}
               Queue Size: 1000
               Value: true
             - Class: rviz/Marker
@@ -277,7 +289,7 @@ Visualization Manager:
               Marker Topic: /planning_vis/viewpoints_4
               Name: viewpoint4
               Namespaces:
-                grid_tour: true
+                {}
               Queue Size: 1000
               Value: true
             - Class: rviz/Marker
@@ -389,7 +401,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -417,7 +429,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -445,7 +457,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -611,7 +623,7 @@ Visualization Manager:
           Marker Topic: /odom_visualization_3/robot
           Name: robot3
           Namespaces:
-            mesh: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -619,7 +631,7 @@ Visualization Manager:
           Marker Topic: /odom_visualization_4/robot
           Name: robot4
           Namespaces:
-            mesh: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Group
@@ -1061,7 +1073,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
       Enabled: true
       Name: Others
     - Alpha: 1
@@ -1091,7 +1103,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 0.20000000298023224
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -1120,6 +1132,19 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /rendezvous_manager/two_drone_region
+      Name: MarkerArray
+      Namespaces:
+        rv_center: true
+        rv_pred_pair: true
+        rv_pred_points: true
+        rv_pred_to_center: true
+        rv_region_circle: true
+        rv_text: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 243
@@ -1147,7 +1172,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 31.178064346313477
+      Distance: 59.57199478149414
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
